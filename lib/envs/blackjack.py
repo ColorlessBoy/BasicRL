@@ -4,7 +4,7 @@ deck = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10]
 
 
 def usable_ace(hand):
-    usable = 1 in hand and sum(hand) + 10 <= 21
+    usable = 1 in hand and sum(hand) <= 11
     return usable
 
 def sumhand(hand):

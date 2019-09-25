@@ -1,4 +1,5 @@
 # Value Iteration: First Meet Monte Carlo
+# It's very slow, and I don't know why.
 from collections import defaultdict
 import matplotlib
 import matplotlib.pyplot as plt
@@ -20,12 +21,15 @@ def epsilon_greedy_policy(Q, epsilon, nA):
         return A
     return policy_fn
 
-def epsilon_monte_carlo(env, num_episode, epsilon = 0.1, gamma = 1.0):
-    Q = defaultdict(lambda: np.zeros(env.nA, dtype = int))
+def epsilon_monte_carlo(env, num_episodes, epsilon = 0.1, gamma = 1.0):
+    Q = defaultdict(lambda: np.zeros(env.nA, dtype = float))
     values = defaultdict(float)
     cnt = defaultdict(float)
     policy = epsilon_greedy_policy(Q, epsilon, env.nA)
-    for _ in range(num_episode):
+    for i_episode in range(num_episodes):
+        if i_episode % 1000 == 0:
+            print("\rEpisode {}/{}.".format(i_episode, num_episodes), end="")
+            sys.stdout.flush()
         episode = []
         state = env.reset()
         while not env.done:
@@ -35,16 +39,16 @@ def epsilon_monte_carlo(env, num_episode, epsilon = 0.1, gamma = 1.0):
             episode.append((state, action, reward))
             state = next_state
         acc_reward = {}
-        r = 0
+        r = 0.0
         for i in range(len(episode)-1, -1, -1):
             r = episode[i][2] + gamma * r
             acc_reward[(episode[i][0], episode[i][1])] = r
         for i in acc_reward:
             values[i] += acc_reward[i]
-            cnt[i] += 1
+            cnt[i] += 1.0
         for i in cnt:
             Q[i[0]][i[1]] = values[i]/cnt[i]
-        policy = epsilon_greedy_policy(Q, epsilon, env.nA)
+        # implict: policy = epsilon_greedy_policy(Q, epsilon, env.nA)
     return Q, policy
 
 def get_value_function(Q, policy):
