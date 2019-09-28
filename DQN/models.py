@@ -1,13 +1,15 @@
 import gym
 import numpy as np
-import skimage
 import tensorflow as tf
 
 VALID_ACTIONS = [0, 1, 2, 3]
 
 class Estimator():
-    def __init__(self):
-        self._build_model()
+    def __init__(self, estimator = None):
+        if estimator:
+            self.model = tf.keras.models.clone_model(estimator.model)
+        else:
+            self._build_model()
     
     def _build_model(self):
         self.model = tf.keras.Sequential([
@@ -29,30 +31,19 @@ class Estimator():
         return self.model.predict(state)
 
     def update(self, states, actions, td_targets):
-        target_q = self.model(states)
-        print(target_q)
-        # loss = self.model.fit(s, target_q)
-        # return loss
-
-def state_process(state):
-    state = skimage.color.rgb2gray(state)
-    state = state[34:, :]
-    state = skimage.transform.resize(state, (84, 84))
-    state = state / 255.0
-    return state
+        target_q = self.model.predict(states)
+        for idx, action in enumerate(actions):
+            target_q[idx][action] = td_targets[idx]
+        self.model.fit(states, target_q, epochs = 1, verbose = 0)
+    
+    def copy(self, estimator):
+        self.model = tf.keras.models.clone_model(estimator.model)
 
 if __name__ == "__main__":
-    env = gym.envs.make('Breakout-v0')
     e = Estimator()
-    observation = env.reset()
-    print(observation.shape)
-    observation = state_process(observation)
-    print(observation.shape)
-    observation = np.stack([observation]*4, axis=2)
-    observations = np.array([observation]*2)
-
+    observations = np.random.rand(2, 84, 84, 4)
     print(e.predict(observations))
     # Test training step
-    y = np.array([10.0, 10.0])
-    a = np.array([1, 3])
-    print("Successful!")
+    td_target = np.array([10.0, 10.0])
+    action = np.array([1, 3])
+    e.update(observations, action, td_target)
